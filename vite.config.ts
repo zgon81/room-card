@@ -28,10 +28,10 @@ function copyToHA() {
       if (!enabled || !process.env.HA_SCP_TARGET) {
         return
       }
-      const SCP = 'C:\\Windows\\System32\\OpenSSH\\scp.exe'
+
       console.log('Copying files to Home Assistant...')
       const result = spawnSync(
-        SCP,
+        'scp',
         ['dist/room-card.js', process.env.HA_SCP_TARGET],
         { stdio: 'inherit' }
       )
