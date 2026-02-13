@@ -71,7 +71,12 @@ export class RoomCard extends LitElement {
 
   setConfig(config: RoomCardConfig) {
     if (!config) throw new Error("Invalid config");
-    this.config = config;
+    
+    this.config = {
+      icon_color_on: "rgb(255, 193, 7)",
+      icon_color_off: "var(--state-inactive-color)",
+      ...config,
+    };
   }
 
   protected render() {
@@ -109,6 +114,7 @@ export class RoomCard extends LitElement {
                 hasHold: hasAction(this.config.icon_hold_action),
                 hasDoubleClick: hasAction(this.config.icon_double_tap_action),
               })}
+              .interactive=${this._hasIconAction}
               .icon=${icon}
               style="--icon-primary-color:${iconColor}"
             ></ha-icon>
@@ -141,6 +147,12 @@ export class RoomCard extends LitElement {
         </div>
       </ha-card>
     `;
+  }
+
+  private get _hasIconAction() {
+    return (
+      !this.config?.icon_tap_action || hasAction(this.config?.icon_tap_action)
+    );
   }
 
   private _handleIconAction(ev: CustomEvent) {

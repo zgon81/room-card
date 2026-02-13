@@ -3,8 +3,10 @@ import { ActionConfig, LovelaceCardConfig, LovelaceCardEditor } from 'custom-car
 export interface RoomCardConfig extends LovelaceCardConfig {
   type: string;
   name?: string;
-  icon?: string;
   area?: string;
+  icon?: string;
+  icon_color_on?: string;
+  icon_color_off?: string;
   temperature?: string;
   humidity?: string;
   light?: string;

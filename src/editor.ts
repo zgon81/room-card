@@ -57,25 +57,33 @@ export class RoomCardEditor extends LitElement {
       name: "name",
       selector: { text: {} },
     },
-    {
-      name: "temperature",
-      selector: { entity: { domain: "sensor" } },
+    { 
+      name: "area", 
+      selector: { area: {} },
     },
     {
-      name: "humidity",
-      selector: { entity: { domain: "sensor" } },
-    },
-    {
-      name: "light",
-      selector: { entity: { domain: "light" } },
-    },
-    {
-      name: "window",
-      selector: { entity: { domain: "binary_sensor", device_class: "window" } },
-    },
-    {
-      name: "cover",
-      selector: { entity: { domain: "cover" } },
+      name: "sensors",
+      type: "expandable",
+      flatten: true,
+      schema: [
+        {
+          name: "temperature",
+          selector: { entity: { domain: "sensor", device_class: "temperature" } },
+        },
+        
+        {
+          name: "humidity",
+          selector: { entity: { domain: "sensor", device_class: "humidity" } },
+        },
+        {
+          name: "window",
+          selector: { entity: { domain: "binary_sensor", device_class: "window" } },
+        },
+        {
+          name: "cover",
+          selector: { entity: { domain: "cover" } },
+        },
+      ],
     },
     {
       name: "interactions",
@@ -101,20 +109,21 @@ export class RoomCardEditor extends LitElement {
           },
         },
         {
-          name: "",
-          type: "optional_actions",
-          flatten: true,
-          schema: (["hold_action", "double_tap_action"] as const).map(
-            (action) => ({
-              name: action,
-              selector: {
-                ui_action: {
-                  default_action: "none" as const,
-                },
-              },
-            })
-          ),
+          name: "hold_action",
+          selector: {
+            ui_action: {
+              default_action: "none",
+            },
+          },
         },
+        {
+          name: "double_tap_action",
+          selector: {
+            ui_action: {
+              default_action: "none",
+            },
+          },
+        }
       ],
     },
   ];
@@ -123,18 +132,24 @@ export class RoomCardEditor extends LitElement {
       switch (schema.name) {
         case "name":
           return "Room name";
-        case "temperature":
-          return "Temperature entity";
-        case "humidity":
-          return "Humidity entity";
+        case "area":
+          return "Area";
         case "light":
           return "Main light";
+        case "sensors":
+          return "Sensors";
+        case "temperature":
+          return "Temperature";
+        case "humidity":
+          return "Humidity";
         case "window":
-          return "Window sensor";
+          return "Window";
         case "cover":
-          return "Cover entity";
+          return "Cover";
         case "interactions":
           return "Interactions";
+        case "optional_actions":
+          return "Optional actions";
         case "tap_action":
           return "Tap action";
         case "icon_tap_action":
