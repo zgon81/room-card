@@ -32,7 +32,7 @@ function copyToHA() {
       console.log('Copying files to Home Assistant...')
       const result = spawnSync(
         'scp',
-        ['dist/room-card.js', process.env.HA_SCP_TARGET],
+        ['dist/*', process.env.HA_SCP_TARGET],
         { stdio: 'inherit' }
       )
 
@@ -55,6 +55,7 @@ export default defineConfig({
   },
   plugins: [copyToHA()],
   build: {
+    sourcemap: true,
     target: 'esnext',
     rollupOptions: {
       external: ['fsevents', ...allExternal],

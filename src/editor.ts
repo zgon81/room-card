@@ -2,11 +2,12 @@ import { LitElement, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { HomeAssistant } from "custom-card-helpers";
 import { RoomCardConfig } from "./types";
+import type { Area } from "./types.ts";
 import { getEntityDefaultTileIconAction } from "./room-card";
 
 @customElement("room-card-editor")
 export class RoomCardEditor extends LitElement {
-  @property({ attribute: false }) hass!: HomeAssistant;
+  @property({ attribute: false }) hass!: HomeAssistant & { areas: Record<string, Area> }
   @property({ attribute: false }) config!: RoomCardConfig;
 
   setConfig(config: RoomCardConfig) {
@@ -35,13 +36,28 @@ export class RoomCardEditor extends LitElement {
   }
 
   private _valueChanged(ev: CustomEvent) {
-    //ev.stopPropagation();
+    ev.stopPropagation();
 
-    const newConfig = {
+    const value = ev.detail.value;
+    let newConfig: RoomCardConfig = {
       ...this.config,
-      ...ev.detail.value,
+      ...value,
       type: this.config.type,
     };
+
+    // Auto-generate name from area
+    if (
+      value.area &&
+      (!this.config.name || this.config.name.trim() === "")
+    ) {
+      const area = this.hass.areas[value.area];
+      if (area) {
+        newConfig = {
+          ...newConfig,
+          name: area.name,
+        };
+      }
+    }
 
     this.dispatchEvent(
       new CustomEvent("config-changed", {
@@ -52,14 +68,19 @@ export class RoomCardEditor extends LitElement {
     );
   }
 
+
   private _schema = (entityId: string | undefined) => [
+    { 
+      name: "area", 
+      selector: { area: {} },
+    },
     {
       name: "name",
       selector: { text: {} },
     },
-    { 
-      name: "area", 
-      selector: { area: {} },
+    {
+      name: "light",
+      selector: { entity: { domain: "light" } },
     },
     {
       name: "sensors",
@@ -82,6 +103,10 @@ export class RoomCardEditor extends LitElement {
         {
           name: "cover",
           selector: { entity: { domain: "cover" } },
+        },
+        {
+          name: "lock",
+          selector: { entity: { domain: "lock" } },
         },
       ],
     },
@@ -146,6 +171,8 @@ export class RoomCardEditor extends LitElement {
           return "Window";
         case "cover":
           return "Cover";
+        case "lock":
+          return "Lock";
         case "interactions":
           return "Interactions";
         case "optional_actions":

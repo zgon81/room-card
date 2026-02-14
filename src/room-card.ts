@@ -6,11 +6,11 @@ import {
     handleAction,
     hasAction,
     DOMAINS_TOGGLE,
-    computeDomain
+    computeDomain,
 } from "custom-card-helpers";
 
 import { RoomCardConfig } from "./types";
-import { formatTemperature } from "./utils";
+import type { Area } from "./types.ts";
 import { actionHandler } from "./action-handler-directive";
 
 export const getEntityDefaultTileIconAction = (entityId: string) => {
@@ -24,35 +24,9 @@ export const getEntityDefaultTileIconAction = (entityId: string) => {
 
 @customElement("room-card")
 export class RoomCard extends LitElement {
-  @property({ attribute: false }) hass!: HomeAssistant;
+  @property({ attribute: false }) hass!: HomeAssistant & { areas: Record<string, Area> }
   @property({ attribute: false }) config!: RoomCardConfig;
-  @state() private _areas: Record<string, { icon?: string }> = {};
-  @state() private _areasLoaded = false;
-  
-  protected willUpdate(changedProps: PropertyValues): void {
-    if (changedProps.has("hass")) {
-      void this._loadAreas();
-    }
-  }
-
-  private async _loadAreas(): Promise<void> {
-    if (!this.hass) return;
-
-    try {
-      const areas = await this.hass.callWS<Array<{ area_id: string; icon?: string }>>({
-        type: "config/area_registry/list",
-      });
-
-      this._areas = Object.fromEntries(
-        areas.map((area) => [area.area_id, { icon: area.icon }])
-      );
-
-      this._areasLoaded = true;
-
-    } catch {
-      this._areas = {};
-    }
-  }
+  @state() private area?: Area
 
   static async getConfigElement() {
     await import("./editor");
@@ -62,7 +36,6 @@ export class RoomCard extends LitElement {
   static getStubConfig(): RoomCardConfig {
     return {
       type: "custom:room-card",
-      name: "Room",
       tap_action: { action: "none" },
       hold_action: { action: "none" },
       double_tap_action: { action: "none" },
@@ -79,22 +52,33 @@ export class RoomCard extends LitElement {
     };
   }
 
+  public getGridOptions() {
+    return {
+      columns: 6,
+    };
+  }
+
   protected render() {
     if (!this.hass || !this.config) return html``;
-    if (this.config.area && !this._areasLoaded) return html``;
 
     const { hass, config: cfg } = this;
     const temperature = cfg.temperature ? hass.states[cfg.temperature] : undefined;
     const humidity = cfg.humidity ? hass.states[cfg.humidity] : undefined;
     const window = cfg.window ? hass.states[cfg.window] : undefined;
-    const cover = cfg.cover ? hass.states[cfg.cover] : undefined;
     const light = cfg.light ? hass.states[cfg.light] : undefined;
+    const lock = cfg.lock ? hass.states[cfg.lock] : undefined;
 
     const lightOn = light?.state === "on";
     const iconColor = lightOn ? cfg.icon_color_on : cfg.icon_color_off;
 
-    const areaIcon = cfg.area ? this._areas[cfg.area]?.icon : undefined;
-    const icon = cfg.icon ?? areaIcon ?? "mdi:home";
+    const area = this.config.area ? this.hass.areas?.[this.config.area] : undefined;
+    const areaIcon = area ? area.icon : undefined;
+    const cardIcon = cfg.icon ?? areaIcon ?? "mdi:home";
+    
+    const cover = cfg.cover ? hass.states[cfg.cover] : undefined;
+    const coverIcon = cover ? this._getCoverIcon(cover) : null;
+    const coverPosition = cover?.attributes?.current_position;
+    const coverColor = coverPosition === 0 ? "LimeGreen" : "Orange";
 
     return html`
       <ha-card
@@ -115,35 +99,59 @@ export class RoomCard extends LitElement {
                 hasDoubleClick: hasAction(this.config.icon_double_tap_action),
               })}
               .interactive=${this._hasIconAction}
-              .icon=${icon}
+              .icon=${cardIcon}
               style="--icon-primary-color:${iconColor}"
             ></ha-icon>
           </div>
 
           <div class="right">
-            <div class="row title">
-              <div class="name">${cfg.name}</div>
+            <div class="row name small-icon">
+              ${lock && html`
+                <ha-icon
+                  icon=${lock.state === "unlocked" ? "mdi:lock-alert" : "mdi:lock"}
+                  style="--icon-primary-color: ${lock.state === "unlocked" ? "red" : "LimeGreen"};"
+                ></ha-icon>
+              `}
+              ${cfg.name}
             </div>
 
-            <div class="row climate">
+            <div class="row climate small-icon">
               ${temperature ? html`
-                <span>🌡 ${temperature.state}${temperature.attributes.unit_of_measurement || ""}</span>
+                <span>
+                  <ha-icon
+                    icon="mdi:thermometer" 
+                    style="--icon-primary-color:OrangeRed">
+                  </ha-icon>
+                  ${temperature.state}${temperature.attributes.unit_of_measurement || ""}
+                </span>
               ` : ""}
               ${humidity ? html`
-                <span>💧 ${humidity.state}%</span>
+                <span>
+                  <ha-icon
+                    icon="mdi:water" 
+                    style="--icon-primary-color:DeepSkyBlue">
+                  </ha-icon>
+                  ${humidity.state}%</span>
+              ` : ""}
+            </div>
+            
+            <div class="row sensors small-icon">
+              ${coverIcon ? html`
+                <ha-icon
+                  .icon=${coverIcon}
+                  style="--icon-primary-color: ${coverColor};"
+                ></ha-icon>
+              ` : ""}
+
+              ${window?.state === "on" ? html`
+                <ha-icon
+                  icon="mdi:window-closed-variant"
+                  style="--icon-primary-color: red;"
+                ></ha-icon>
               ` : ""}
             </div>
 
-            <div class="row sensors">
-              ${window ? html`
-                <span>🪟 ${window.state === "on" ? "OTW" : "ZAM"}</span>
-              ` : ""}
-              ${cover ? html`
-                <span>▮ ${cover.state}</span>
-              ` : ""}
-            </div>
           </div>
-
         </div>
       </ha-card>
     `;
@@ -153,6 +161,19 @@ export class RoomCard extends LitElement {
     return (
       !this.config?.icon_tap_action || hasAction(this.config?.icon_tap_action)
     );
+  }
+
+  private _getCoverIcon(cover: any): string | null {
+    const pos = cover?.attributes?.current_position;
+
+    if (pos === undefined || pos === null) return null;
+
+    if (pos > 90) return "cil:shutter-0";
+    if (pos > 70) return "cil:shutter-1";
+    if (pos > 40) return "cil:shutter-2";
+    if (pos > 10) return "cil:shutter-3";
+
+    return "cil:shutter-4";
   }
 
   private _handleIconAction(ev: CustomEvent) {
@@ -178,6 +199,7 @@ export class RoomCard extends LitElement {
       font-size: 1rem;
       display: grid;
       grid-template-columns: 3.5rem 1fr;
+      height: 100%;
     }
 
     .left {
@@ -189,6 +211,11 @@ export class RoomCard extends LitElement {
 
     .icon {
       --mdc-icon-size: 2.5rem;
+    }
+
+    .small-icon {
+      --mdc-icon-size: 1.5rem;
+
     }
 
     .right {

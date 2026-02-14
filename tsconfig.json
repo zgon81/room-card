@@ -5,6 +5,7 @@
     "module": "ESNext",
     "lib": ["ES2021", "DOM"],
     "moduleResolution": "Node",
+    "sourceMap": true,
 
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
