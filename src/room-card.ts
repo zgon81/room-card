@@ -12,6 +12,7 @@ import {
 import { RoomCardConfig } from "./types";
 import type { Area } from "./types.ts";
 import { actionHandler } from "./action-handler-directive";
+import { formatTemperature, formatHumidity } from "./utils";
 
 export const getEntityDefaultTileIconAction = (entityId: string) => {
   const domain = computeDomain(entityId);
@@ -47,7 +48,7 @@ export class RoomCard extends LitElement {
     
     this.config = {
       icon_color_on: "rgb(255, 193, 7)",
-      icon_color_off: "var(--state-inactive-color)",
+      icon_color_off: "rgba(255, 255, 255, 0.6)",
       ...config,
     };
   }
@@ -90,77 +91,76 @@ export class RoomCard extends LitElement {
       >
         <div class="card">
 
-          <div class="left">
-            <ha-icon
-              class="icon"
-              @action=${this._handleIconAction}
-              .actionHandler=${actionHandler({
-                hasHold: hasAction(this.config.icon_hold_action),
-                hasDoubleClick: hasAction(this.config.icon_double_tap_action),
-              })}
-              .interactive=${this._hasIconAction}
-              .icon=${cardIcon}
-              style="--icon-primary-color:${iconColor}"
-            ></ha-icon>
-          </div>
+          <div class="top">
 
-          <div class="right">
-            <div class="row name small-icon">
-              ${lock && html`
-                <ha-icon
-                  icon=${lock.state === "unlocked" ? "mdi:lock-alert" : "mdi:lock"}
-                  style="--icon-primary-color: ${lock.state === "unlocked" ? "red" : "LimeGreen"};"
-                ></ha-icon>
-              `}
+            <div class="main-icon ${lightOn ? "active" : ""}">
+              <ha-icon
+                @action=${this._handleIconAction}
+                .actionHandler=${actionHandler({
+                  hasHold: hasAction(this.config.icon_hold_action),
+                  hasDoubleClick: hasAction(this.config.icon_double_tap_action),
+                })}
+                .icon=${cardIcon}
+                style="--icon-primary-color:${iconColor}"
+              ></ha-icon>
+            </div>
+
+            <div class="title">
               ${cfg.name}
             </div>
 
-            <div class="row climate small-icon">
+            <div class="climate">
               ${temperature ? html`
-                <span>
-                  <ha-icon
-                    icon="mdi:thermometer" 
-                    style="--icon-primary-color:OrangeRed">
-                  </ha-icon>
-                  ${temperature.state}${temperature.attributes.unit_of_measurement || ""}
-                </span>
-              ` : ""}
-              ${humidity ? html`
-                <span>
-                  <ha-icon
-                    icon="mdi:water" 
-                    style="--icon-primary-color:DeepSkyBlue">
-                  </ha-icon>
-                  ${humidity.state}%</span>
-              ` : ""}
-            </div>
-            
-            <div class="row sensors small-icon">
-              ${coverIcon ? html`
-                <ha-icon
-                  .icon=${coverIcon}
-                  style="--icon-primary-color: ${coverColor};"
-                ></ha-icon>
+                <div class="temp">
+                  ${formatTemperature(hass, cfg.temperature)}
+                </div>
               ` : ""}
 
-              ${window?.state === "on" ? html`
-                <ha-icon
-                  icon="mdi:window-closed-variant"
-                  style="--icon-primary-color: red;"
-                ></ha-icon>
+              ${humidity ? html`
+                <div class="hum">
+                  ${formatHumidity(hass, cfg.humidity)}
+                </div>
               ` : ""}
             </div>
 
           </div>
+
+          <div class="bottom">
+
+            ${light ? html`
+              <ha-icon
+                icon="mdi:lightbulb"
+                style="--icon-primary-color:${lightOn ? cfg.icon_color_on : cfg.icon_color_off}"
+              ></ha-icon>
+            ` : ""}
+
+            ${window?.state === "on" ? html`
+              <ha-icon
+                icon="mdi:window-open-variant"
+                style="--icon-primary-color:red"
+              ></ha-icon>
+            ` : ""}
+
+            ${coverIcon ? html`
+              <ha-icon
+                .icon=${coverIcon}
+                style="--icon-primary-color:${coverColor}"
+              ></ha-icon>
+            ` : ""}
+
+            ${lock ? html`
+              <ha-icon
+                icon=${lock.state === "unlocked" ? "mdi:lock-open-variant" : "mdi:lock"}
+                style="--icon-primary-color:${lock.state === "unlocked" ? "red" : "LimeGreen"}"
+              ></ha-icon>
+            ` : ""}
+
+          </div>
+
         </div>
+
       </ha-card>
     `;
-  }
-
-  private get _hasIconAction() {
-    return (
-      !this.config?.icon_tap_action || hasAction(this.config?.icon_tap_action)
-    );
   }
 
   private _getCoverIcon(cover: any): string | null {
@@ -195,68 +195,100 @@ export class RoomCard extends LitElement {
   }
 
   static styles = css`
-    .card {
-      font-size: 1rem;
-      display: grid;
-      grid-template-columns: 3.5rem 1fr;
+    ha-card {
       height: 100%;
+      overflow: hidden;
+
+      background:
+        linear-gradient(
+          160deg,
+          rgba(255,255,255,0.1) 0%,
+          rgba(200,200,200,0.1) 40%,
+          rgba(50,50,50,0.15) 100%
+        );
     }
 
-    .left {
+    .card {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      padding: 0.5rem 0.5rem 0.5rem 0.5rem;
+      gap: 1rem;
+    }
+
+    .top {
+      display: grid;
+      grid-template-columns: 3.2rem 1fr auto;
+      align-items: start;
+      column-gap: 0.8rem;
+    }
+
+    .main-icon {
+      --mdc-icon-size: 2.2rem;
+
+      position: relative;
+
+      width: 3.4rem;
+      height: 3.4rem;
+
+      border-radius: 0px 0px 15px 0px;
+      background: rgba(255, 255, 255, 0.1);
+
       display: flex;
       align-items: center;
       justify-content: center;
-      height: 100%;
+
+      margin-top: -0.6rem;
+      margin-left: -0.6rem;
     }
 
-    .icon {
-      --mdc-icon-size: 2.5rem;
-    }
+    .main-icon.active {
+      background: rgba(255, 193, 7, 0.12);
 
-    .small-icon {
-      --mdc-icon-size: 1.5rem;
-
-    }
-
-    .right {
-      display: grid;
-      grid-template-rows: auto auto auto;
-    }
-
-    .row {
-      padding: 0.375rem 0.625rem;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-
-    .row:not(:last-child) {
-      border-bottom: 1px dashed var(--divider-color);
+      box-shadow:
+        0 0 10px rgba(255, 193, 7, 0.15),
+        0 0 15px rgba(255, 193, 7, 0.08);
     }
 
     .title {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-
-    .name {
-      padding: 0.5rem;
       font-size: 1.1rem;
       font-weight: 600;
-      line-height: 1.2;
+      line-height: 1.25;
+      word-break: break-word;
+      margin-left: -0.6rem;
     }
 
     .climate {
-      font-size: 0.875rem;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+
+      font-size: 0.8rem;
+      font-weight: 400;
+      opacity: 0.8;
+
+      gap: 0.1rem;   /* 🔥 kontrolowany mały odstęp */
     }
 
-    .sensors {
-      font-size: 0.8125rem;
-      opacity: 0.85;
+    .climate .temp {
+      line-height: 1.1;
     }
 
-    ha-card {
-      height: 100%;
+    .climate .hum {
+      line-height: 1.1;
+      opacity: 0.7;
     }
+
+    .bottom {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      opacity: 0.9;
+    }
+
+    .bottom ha-icon {
+      --mdc-icon-size: 1.6rem;
+    }
+
   `;
 }
