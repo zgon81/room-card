@@ -1,7 +1,6 @@
 import { LitElement, html, css, PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import {
-    HomeAssistant,
     ActionHandlerEvent,
     handleAction,
     hasAction,
@@ -69,6 +68,7 @@ export class RoomCard extends LitElement {
     const window = cfg.window ? hass.states[cfg.window] : undefined;
     const light = cfg.light ? hass.states[cfg.light] : undefined;
     const lock = cfg.lock ? hass.states[cfg.lock] : undefined;
+    const motion = cfg.motion ? hass.states[cfg.motion] : undefined;
 
     const lightOn = light?.state === "on";
     const iconColorOn = isDark ? "rgb(255, 193, 7)" : "Orange";
@@ -129,7 +129,7 @@ export class RoomCard extends LitElement {
 
           </div>
 
-          <div class="bottom">
+          <div class="sensors">
 
             ${light ? html`
               <ha-icon
@@ -156,6 +156,13 @@ export class RoomCard extends LitElement {
               <ha-icon
                 icon=${lock.state === "unlocked" ? "mdi:lock-open-variant" : "mdi:lock"}
                 style="--icon-primary-color:${lock.state === "unlocked" ? "red" : "LimeGreen"}"
+              ></ha-icon>
+            ` : ""}
+
+            ${motion?.state === "on" ? html`
+              <ha-icon
+                icon="mdi:motion-sensor"
+                style="--icon-primary-color:DeepSkyBlue"
               ></ha-icon>
             ` : ""}
 
@@ -314,14 +321,14 @@ export class RoomCard extends LitElement {
       opacity: 0.7;
     }
 
-    .bottom {
+    .sensors {
       display: flex;
       align-items: center;
       gap: 1rem;
       opacity: 0.9;
     }
 
-    .bottom ha-icon {
+    .sensors ha-icon {
       --mdc-icon-size: 1.6rem;
     }
 

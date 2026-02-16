@@ -10,6 +10,7 @@ export interface RoomCardConfig extends LovelaceCardConfig {
   light?: string;
   window?: string;
   cover?: string;
+  motion?: string;
   lock?: string;
   tap_action?: ActionConfig;
   icon_tap_action?: ActionConfig;
