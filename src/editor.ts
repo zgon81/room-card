@@ -1,8 +1,8 @@
-import { LitElement, html, nothing } from "lit";
+import { LitElement, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { HomeAssistant } from "custom-card-helpers";
 import { RoomCardConfig } from "./types";
-import type { Area } from "./types.ts";
+import type { Area } from "./types";
 import { getEntityDefaultTileIconAction } from "./room-card";
 
 @customElement("room-card-editor")
@@ -181,8 +181,6 @@ export class RoomCardEditor extends LitElement {
           return "Motion";
         case "interactions":
           return "Interactions";
-        case "optional_actions":
-          return "Optional actions";
         case "tap_action":
           return "Tap action";
         case "icon_tap_action":
@@ -198,11 +196,11 @@ export class RoomCardEditor extends LitElement {
 
   private computeHelper = (schema: { name: string }) => {
       switch (schema.name) {
-        case "temperature_entity":
+        case "temperature":
           return "Select the sensor used to display room temperature";
-        case "humidity_entity":
+        case "humidity":
           return "Select the sensor used to display room humidity";
-        case "light_entity":
+        case "light":
           return "Light or light group controlled by this room";
         case "tap_action":
           return "Action executed when tapping the card";
