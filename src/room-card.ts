@@ -10,6 +10,7 @@ import {
 } from "custom-card-helpers";
 
 import { RoomCardConfig } from "./types";
+import type { ExtendedHomeAssistant } from "./ha-extended";
 import type { Area } from "./types.ts";
 import { actionHandler } from "./action-handler-directive";
 import { formatTemperature, formatHumidity } from "./utils";
@@ -25,7 +26,7 @@ export const getEntityDefaultTileIconAction = (entityId: string) => {
 
 @customElement("room-card")
 export class RoomCard extends LitElement {
-  @property({ attribute: false }) hass!: HomeAssistant & { areas: Record<string, Area> }
+  @property({ attribute: false }) hass!: ExtendedHomeAssistant;
   @property({ attribute: false }) config!: RoomCardConfig;
   @state() private area?: Area
 
@@ -47,8 +48,6 @@ export class RoomCard extends LitElement {
     if (!config) throw new Error("Invalid config");
     
     this.config = {
-      icon_color_on: "rgb(255, 193, 7)",
-      icon_color_off: "rgba(255, 255, 255, 0.6)",
       ...config,
     };
   }
@@ -63,6 +62,8 @@ export class RoomCard extends LitElement {
     if (!this.hass || !this.config) return html``;
 
     const { hass, config: cfg } = this;
+    const isDark = hass.themes ? hass.themes?.darkMode : undefined;
+
     const temperature = cfg.temperature ? hass.states[cfg.temperature] : undefined;
     const humidity = cfg.humidity ? hass.states[cfg.humidity] : undefined;
     const window = cfg.window ? hass.states[cfg.window] : undefined;
@@ -70,7 +71,9 @@ export class RoomCard extends LitElement {
     const lock = cfg.lock ? hass.states[cfg.lock] : undefined;
 
     const lightOn = light?.state === "on";
-    const iconColor = lightOn ? cfg.icon_color_on : cfg.icon_color_off;
+    const iconColorOn = isDark ? "rgb(255, 193, 7)" : "Orange";
+    const iconColorOff = isDark ? "rgba(255, 255, 255, 0.6)" : "rgba(0,0,0,0.45)";
+    const iconColor = lightOn ? iconColorOn : iconColorOff;
 
     const area = this.config.area ? this.hass.areas?.[this.config.area] : undefined;
     const areaIcon = area ? area.icon : undefined;
@@ -83,6 +86,7 @@ export class RoomCard extends LitElement {
 
     return html`
       <ha-card
+        class=${isDark ? "dark" : "light"}
         @action=${this._handleAction}
         .actionHandler=${actionHandler({
           hasHold: hasAction(this.config.hold_action),
@@ -93,7 +97,7 @@ export class RoomCard extends LitElement {
 
           <div class="top">
 
-            <div class="main-icon ${lightOn ? "active" : ""}">
+            <div class="main-icon ${lightOn ? "active" : ""} ${isDark ? "dark" : "light"}">
               <ha-icon
                 @action=${this._handleIconAction}
                 .actionHandler=${actionHandler({
@@ -130,7 +134,7 @@ export class RoomCard extends LitElement {
             ${light ? html`
               <ha-icon
                 icon="mdi:lightbulb"
-                style="--icon-primary-color:${lightOn ? cfg.icon_color_on : cfg.icon_color_off}"
+                style="--icon-primary-color:${lightOn ? iconColorOn : iconColorOff}"
               ></ha-icon>
             ` : ""}
 
@@ -196,16 +200,32 @@ export class RoomCard extends LitElement {
 
   static styles = css`
     ha-card {
+      position: relative;
       height: 100%;
       overflow: hidden;
 
+      border-radius: 15px;
+    }
+
+    ha-card.dark {
+      border: 1px solid rgba(255,255,255,0.12);
       background:
         linear-gradient(
           160deg,
-          rgba(255,255,255,0.1) 0%,
-          rgba(200,200,200,0.1) 40%,
-          rgba(50,50,50,0.15) 100%
+          rgb(60,60,60) 0%,
+          rgb(40,40,40) 40%,
+          rgb(20,20,20) 100%
         );
+    }
+
+    ha-card.light {
+      border: 1px solid rgba(0,0,0,0.12);
+      background: linear-gradient(
+        160deg,
+        rgb(255,255,255) 0%,
+        rgb(238,238,238) 50%,
+        rgb(225,225,225) 100%
+      );
     }
 
     .card {
@@ -224,15 +244,14 @@ export class RoomCard extends LitElement {
     }
 
     .main-icon {
-      --mdc-icon-size: 2.2rem;
+      --mdc-icon-size: 2.3rem;
 
       position: relative;
 
-      width: 3.4rem;
-      height: 3.4rem;
+      width: 3.5rem;
+      height: 3.5rem;
 
       border-radius: 0px 0px 15px 0px;
-      background: rgba(255, 255, 255, 0.1);
 
       display: flex;
       align-items: center;
@@ -242,12 +261,28 @@ export class RoomCard extends LitElement {
       margin-left: -0.6rem;
     }
 
-    .main-icon.active {
-      background: rgba(255, 193, 7, 0.12);
+    .main-icon.dark {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .main-icon.light {
+      background: rgba(0, 0, 0, 0.1);
+    }
+
+    .main-icon.active.dark {
+      background: rgba(255, 193, 7, 0.15);
 
       box-shadow:
-        0 0 10px rgba(255, 193, 7, 0.15),
-        0 0 15px rgba(255, 193, 7, 0.08);
+        0 0 5px rgba(255, 193, 7, 0.15),
+        0 0 5px rgba(255, 193, 7, 0.2);
+    }
+
+    .main-icon.active.light {
+      background: rgba(255, 193, 7, 0.35);
+
+      box-shadow:
+        0 0 12px rgba(255, 193, 7, 0.35),
+        0 0 3px rgba(255, 193, 7, 0.5);
     }
 
     .title {
@@ -267,7 +302,7 @@ export class RoomCard extends LitElement {
       font-weight: 400;
       opacity: 0.8;
 
-      gap: 0.1rem;   /* 🔥 kontrolowany mały odstęp */
+      gap: 0.1rem;
     }
 
     .climate .temp {

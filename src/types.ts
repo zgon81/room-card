@@ -5,8 +5,6 @@ export interface RoomCardConfig extends LovelaceCardConfig {
   name?: string;
   area?: string;
   icon?: string;
-  icon_color_on?: string;
-  icon_color_off?: string;
   temperature?: string;
   humidity?: string;
   light?: string;
