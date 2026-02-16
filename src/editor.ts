@@ -1,13 +1,12 @@
 import { LitElement, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { HomeAssistant } from "custom-card-helpers";
+import { ExtendedHomeAssistant } from "./ha-extended";
 import { RoomCardConfig } from "./types";
-import type { Area } from "./types";
 import { getEntityDefaultTileIconAction } from "./room-card";
 
 @customElement("room-card-editor")
 export class RoomCardEditor extends LitElement {
-  @property({ attribute: false }) hass!: HomeAssistant & { areas: Record<string, Area> }
+  @property({ attribute: false }) hass!: ExtendedHomeAssistant;
   @property({ attribute: false }) config!: RoomCardConfig;
 
   setConfig(config: RoomCardConfig) {
@@ -50,7 +49,7 @@ export class RoomCardEditor extends LitElement {
       value.area &&
       (!this.config.name || this.config.name.trim() === "")
     ) {
-      const area = this.hass.areas[value.area];
+      const area = this.hass.areas?.[value.area];
       if (area) {
         newConfig = {
           ...newConfig,
