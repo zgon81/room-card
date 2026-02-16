@@ -10,7 +10,7 @@ import type { ActionHandlerDetail, ActionHandlerOptions } from 'custom-card-help
 import { fireEvent } from 'custom-card-helpers'
 
 const isTouch =
-  'ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.maxTouchPoints > 0
+  'ontouchstart' in window || navigator.maxTouchPoints > 0
 
 interface IActionHandler extends HTMLElement {
   holdTime: number
@@ -169,16 +169,20 @@ class ActionHandler extends HTMLElement implements IActionHandler {
   }
 }
 
-// TODO You need to replace all instances of "action-handler-boilerplate" with "action-handler-<your card name>"
-customElements.define('action-handler-boilerplate', ActionHandler)
+const ACTION_HANDLER_TAG = 'action-handler-room-card'
+
+if (!customElements.get(ACTION_HANDLER_TAG)) {
+  customElements.define(ACTION_HANDLER_TAG, ActionHandler)
+}
 
 const getActionHandler = (): IActionHandler => {
   const body = document.body
-  if (body.querySelector('action-handler-boilerplate')) {
-    return body.querySelector('action-handler-boilerplate') as IActionHandler
+  const existing = body.querySelector(ACTION_HANDLER_TAG)
+  if (existing) {
+    return existing as IActionHandler
   }
 
-  const actionhandler = document.createElement('action-handler-boilerplate')
+  const actionhandler = document.createElement(ACTION_HANDLER_TAG)
   body.appendChild(actionhandler)
 
   return actionhandler as IActionHandler

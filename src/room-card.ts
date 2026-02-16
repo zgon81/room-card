@@ -1,5 +1,5 @@
-import { LitElement, html, css, PropertyValues } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { LitElement, html, css } from "lit";
+import { customElement, property } from "lit/decorators.js";
 import {
     ActionHandlerEvent,
     handleAction,
@@ -10,7 +10,6 @@ import {
 
 import { RoomCardConfig } from "./types";
 import type { ExtendedHomeAssistant } from "./ha-extended";
-import type { Area } from "./types.ts";
 import { actionHandler } from "./action-handler-directive";
 import { formatTemperature, formatHumidity } from "./utils";
 
@@ -27,7 +26,6 @@ export const getEntityDefaultTileIconAction = (entityId: string) => {
 export class RoomCard extends LitElement {
   @property({ attribute: false }) hass!: ExtendedHomeAssistant;
   @property({ attribute: false }) config!: RoomCardConfig;
-  @state() private area?: Area
 
   static async getConfigElement() {
     await import("./editor");
