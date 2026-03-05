@@ -105,7 +105,7 @@ export class RoomCardEditor extends LitElement {
         },
         {
           name: "motion",
-          selector: { entity: { domain: "binary_sensor", device_class: "motion" } },
+          selector: { entity: { domain: "binary_sensor", device_class: ["motion", "occupancy"] } },
         },
         {
           name: "lock",

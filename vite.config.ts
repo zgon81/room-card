@@ -32,7 +32,7 @@ function copyToHA() {
       console.log('Copying files to Home Assistant...')
       const result = spawnSync(
         'scp',
-        ['dist/*', process.env.HA_SCP_TARGET],
+        ['dist/room-card.js', process.env.HA_SCP_TARGET],
         { stdio: 'inherit' }
       )
 
